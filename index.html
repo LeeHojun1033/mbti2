@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <!-- 모바일 뷰포트 완벽 대응 (확대 방지) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>간호대생 찐 공감 생존형 MBTI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 화면 캡처용 라이브러리 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <style>
+    /* iOS 모바일 최적화 및 네이티브 앱 느낌 구현 */
+    html, body {
+      overscroll-behavior-y: none; /* 고무줄 바운스 효과 방지 */
+      -webkit-user-select: none; /* 글씨 꾹 눌러서 파랗게 선택되는 현상 방지 */
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    /* 터치 스크롤이 필요한 영역만 허용 */
+    .allow-scroll {
+      overscroll-behavior-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans">
+  
+  <div class="flex flex-col items-center w-full min-h-[100dvh] pb-[env(safe-area-inset-bottom)]">
+    <div class="w-full max-w-[430px] flex-1 flex flex-col bg-white shadow-xl relative overflow-x-hidden pt-[max(env(safe-area-inset-top),16px)]">
+      
+      <!-- 1. 시작 화면 -->
+      <div id="screen-intro" class="flex-1 flex flex-col justify-center items-center p-6 text-center animate-fade-in hidden">
+        <div class="mb-4 inline-block px-3 py-1 bg-blue-100 text-blue-700 text-sm font-bold rounded-full">
+          실습/과제/국시/연애
+        </div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-4 leading-tight">
+          간호대생 찐 공감<br/>생존형 MBTI
+        </h1>
+        <p class="text-slate-500 mb-10 leading-relaxed text-sm">
+          쏟아지는 과제와 피말리는 실습 속에서<br/>나는 어떤 유형의 간호대생일까? 🩺
+        </p>
+        <button onclick="startTest()" class="w-full h-14 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white font-bold text-lg rounded-2xl shadow-lg">
+          테스트 시작하기
+        </button>
+      </div>
+
+      <!-- 2. 테스트 화면 -->
+      <div id="screen-test" class="flex-1 flex flex-col p-6 animate-fade-in hidden">
+        <div class="w-full mb-8 mt-4">
+          <div class="flex justify-between items-end mb-2">
+            <button id="btn-back" onclick="handleBack()" class="text-blue-600 font-bold text-sm flex items-center gap-1 py-1 pl-0 pr-2 active:scale-95">
+              ← 이전
+            </button>
+            <span id="progress-text" class="text-xs font-medium text-slate-400 pb-1">1 / 20</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+            <div id="progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-300 w-[5%]"></div>
+          </div>
+        </div>
+        <div class="flex-1 flex flex-col justify-center mb-10">
+          <h2 id="question-text" class="text-2xl font-bold text-slate-800 leading-snug break-keep">질문 로딩중...</h2>
+        </div>
+        <div id="options-container" class="flex flex-col gap-4 pb-4">
+          <!-- 버튼 동적 생성 영역 -->
+        </div>
+      </div>
+
+      <!-- 3. 결과 화면 -->
+      <div id="screen-result" class="flex-1 flex flex-col overflow-y-auto allow-scroll hidden bg-slate-50">
+        
+        <!-- 이미지로 저장될 영역 (버튼 제외) -->
+        <div id="capture-area" class="bg-slate-50 flex flex-col p-6 pb-8 flex-none">
+          <!-- 결과 타이틀 -->
+          <div class="text-center mt-6 mb-8">
+            <p class="text-sm font-semibold text-blue-500 mb-2">당신의 캠퍼스 라이프스타일</p>
+            <h1 id="result-mbti" class="text-6xl font-black text-slate-300 tracking-tighter mb-4">MBTI</h1>
+            <h2 id="result-title" class="text-lg font-bold text-slate-700 bg-white shadow-sm inline-block px-5 py-3 rounded-2xl">
+              타이틀
+            </h2>
+          </div>
+
+          <!-- 대학 생활 요약 -->
+          <div class="bg-white/80 border border-slate-100 p-6 rounded-3xl shadow-sm mb-6">
+            <h3 class="text-sm font-bold text-slate-400 mb-4 flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+              대학 생활 요약
+            </h3>
+            <p id="result-desc" class="text-slate-700 leading-relaxed text-[15px] break-keep">
+              설명
+            </p>
+          </div>
+
+          <!-- 스펙트럼 뷰 -->
+          <div class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm mb-6">
+            <h3 class="text-sm font-bold text-slate-400 mb-6 flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+              나의 세부 성향 스펙트럼
+            </h3>
+            <div class="flex flex-col gap-6">
+              <!-- E/I -->
+              <div class="flex flex-col gap-2">
+                <div class="flex justify-between text-[13px] font-bold text-slate-500">
+                  <span id="text-e" class="text-blue-600">E</span>
+                  <span id="text-i">I</span>
+                </div>
+                <div class="relative w-full h-3.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="bar-e" class="absolute top-0 left-0 h-full bg-blue-500 rounded-full transition-all duration-1000 w-1/2"></div>
+                </div>
+              </div>
+              <!-- S/N -->
+              <div class="flex flex-col gap-2">
+                <div class="flex justify-between text-[13px] font-bold text-slate-500">
+                  <span id="text-s" class="text-blue-600">S</span>
+                  <span id="text-n">N</span>
+                </div>
+                <div class="relative w-full h-3.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="bar-s" class="absolute top-0 left-0 h-full bg-blue-500 rounded-full transition-all duration-1000 w-1/2"></div>
+                </div>
+              </div>
+              <!-- T/F -->
+              <div class="flex flex-col gap-2">
+                <div class="flex justify-between text-[13px] font-bold text-slate-500">
+                  <span id="text-t" class="text-blue-600">T</span>
+                  <span id="text-f">F</span>
+                </div>
+                <div class="relative w-full h-3.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="bar-t" class="absolute top-0 left-0 h-full bg-blue-500 rounded-full transition-all duration-1000 w-1/2"></div>
+                </div>
+              </div>
+              <!-- J/P -->
+              <div class="flex flex-col gap-2">
+                <div class="flex justify-between text-[13px] font-bold text-slate-500">
+                  <span id="text-j" class="text-blue-600">J</span>
+                  <span id="text-p">P</span>
+                </div>
+                <div class="relative w-full h-3.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="bar-j" class="absolute top-0 left-0 h-full bg-blue-500 rounded-full transition-all duration-1000 w-1/2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 추천 꿀조합 -->
+          <div class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm">
+            <h3 class="text-sm font-bold text-slate-500 mb-5 flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              추천 부서 & 꿀조합
+            </h3>
+            <ul id="jobs-list" class="flex flex-col gap-3">
+              <!-- 동적 생성 -->
+            </ul>
+          </div>
+        </div>
+        <!-- 여기까지 이미지로 캡처됨 -->
+
+        <!-- 하단 액션 버튼 영역 (캡처 안됨) -->
+        <div class="flex flex-col gap-3 px-6 pb-12">
+          <button onclick="handleImageDownload()" class="w-full h-14 bg-slate-800 hover:bg-slate-900 active:scale-95 transition-all text-white font-bold text-lg rounded-2xl shadow-lg flex justify-center items-center gap-2">
+            📸 결과 이미지로 저장하기
+          </button>
+          
+          <button onclick="handleResultShare()" class="w-full h-14 bg-[#FEE500] hover:bg-[#F4DC00] text-black active:scale-95 transition-all font-bold text-lg rounded-2xl shadow-lg flex justify-center items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3c-5.523 0-10 3.486-10 7.78 0 2.766 1.83 5.18 4.61 6.5l-1.15 4.2c-.08.31.25.55.51.37l4.89-3.23c.37.05.75.08 1.14.08 5.523 0 10-3.486 10-7.78C22 6.486 17.523 3 12 3z"/>
+            </svg>
+            공유하기
+          </button>
+
+          <button onclick="restartTest()" class="w-full h-14 mt-4 bg-white border-2 border-slate-200 text-slate-500 hover:bg-slate-50 active:scale-95 transition-all font-bold text-lg rounded-2xl">
+            테스트 다시하기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 메시지 -->
+  <div id="toast-msg" class="fixed bottom-12 left-1/2 -translate-x-1/2 bg-slate-800/95 text-white px-6 py-3 rounded-full shadow-2xl text-[14px] font-semibold transition-opacity duration-300 opacity-0 pointer-events-none z-50 whitespace-nowrap hidden">
+    메시지
+  </div>
+
+  <script>
+    // 질문 데이터 (간호학과 20문항 + 연애 4문항 포함)
+    const QUESTIONS = [
+      { id: 1, type: 'EI', text: '지옥 같던 첫 임상 실습이 끝난 금요일 저녁, 나는?', options: [ { text: '동기들과 술집으로 직행! 실습 썰 풀면서 스트레스 날린다.', trait: 'E' }, { text: '바로 긱사/자취방으로 피신. 침대에 누워서 아무도 안 만나고 쉰다.', trait: 'I' } ] },
+      { id: 2, type: 'EI', text: '전공 조별 과제(케이스 스터디) 첫 모임! 내 모습은?', options: [ { text: '"자 제가 화면 공유할게요! 역할 분담부터 할까요?" 주도적으로 나선다.', trait: 'E' }, { text: '(누군가 말하길 기다리며) "네... 저는 자료조사 할게요..." 조용히 맡은 바를 한다.', trait: 'I' } ] },
+      { id: 3, type: 'EI', text: '💝 마음에 드는 타 과생(혹은 선배)이 생겼다! 나의 접근법은?', options: [ { text: '적극적으로 인스타 맞팔도 걸고 밥 먹자고 먼저 직진한다!', trait: 'E' }, { text: '우연히 마주칠 기회만 노리며 몰래 호감을 키워간다.', trait: 'I' } ] },
+      { id: 4, type: 'EI', text: '수업 중 교수님이 기습적으로 질문을 던졌을 때 나는?', options: [ { text: '틀려도 일단 대답한다! 눈을 마주치며 적극적으로 참여한다.', trait: 'E' }, { text: '최대한 교수님과 눈을 피하며 속으로만 정답을 생각한다.', trait: 'I' } ] },
+      { id: 5, type: 'EI', text: '개강 총회나 학과 MT에 참석했을 때 나의 텐션은?', options: [ { text: '여기저기 테이블 돌아다니며 새로운 사람들과 친해지기 바쁘다.', trait: 'E' }, { text: '친한 동기들 옆에 딱 붙어서 우리끼리만 조용히 논다.', trait: 'I' } ] },
+      { id: 6, type: 'SN', text: '어마어마한 양의 성인간호학 시험 공부를 할 때 나는?', options: [ { text: '교수님이 찝어준 기출문제와 요약본, 족보 위주로 현실적인 암기를 한다.', trait: 'S' }, { text: '질병의 기전부터 전체적인 흐름을 이해하려고 상상의 나래를 펼치며 공부한다.', trait: 'N' } ] },
+      { id: 7, type: 'SN', text: '기본간호학 실습(술기) 평가 연습 중이다. 나의 스타일은?', options: [ { text: '프로토콜 순서 그대로, 체크리스트에 맞춰 정확한 동작을 연습한다.', trait: 'S' }, { text: '"만약 환자가 여기서 거부하면 어떡하지?" 여러 돌발 상황을 시뮬레이션 해본다.', trait: 'N' } ] },
+      { id: 8, type: 'SN', text: '💝 연인(혹은 썸남/썸녀)과 데이트 약속을 잡을 때 나는?', options: [ { text: '만날 장소, 시간, 먹을 메뉴의 현실적인 동선을 고려해서 정한다.', trait: 'S' }, { text: '"우리 나중에 오로라 보러 갈래?" 낭만적이고 먼 미래의 데이트를 상상한다.', trait: 'N' } ] },
+      { id: 9, type: 'SN', text: '처음 병동 실습을 나가서 환자를 대면했을 때 드는 생각은?', options: [ { text: '"환자분 V/S 수치 확인하고 다음 루틴 업무가 뭐였지?" 당면한 일에 집중한다.', trait: 'S' }, { text: '"이 환자분은 어쩌다 이 병에 걸리셨을까? 사연이 있을까?" 이면을 상상한다.', trait: 'N' } ] },
+      { id: 10, type: 'SN', text: '과제 듀티(주제)를 자유롭게 정하라고 하셨다. 나의 선택은?', options: [ { text: '자료가 많고 과거 선배들이 자주 했던 안전하고 검증된 주제.', trait: 'S' }, { text: '남들이 잘 안 하지만 흥미롭고 창의적인 새로운 주제.', trait: 'N' } ] },
+      { id: 11, type: 'TF', text: '친한 동기가 "나 실습에서 수간호사 쌤한테 엄청 깨졌어 ㅠㅠ" 하며 운다.', options: [ { text: '"왜? 무슨 실수 했는데? 다음엔 이렇게 대처해봐." 원인과 해결책을 찾는다.', trait: 'T' }, { text: '"진짜? 헐 ㅠㅠ 그 쌤 너무하네 진짜 고생했다." 무조건 공감하고 위로한다.', trait: 'F' } ] },
+      { id: 12, type: 'TF', text: '열심히 준비한 과제에서 C+을 받았다. 나의 반응은?', options: [ { text: '어느 기준에서 깎인 건지 채점 기준표를 보며 내 실수를 분석한다.', trait: 'T' }, { text: '밤새서 한 건데... 교수님한테 너무 서운하고 하루 종일 우울하다.', trait: 'F' } ] },
+      { id: 13, type: 'TF', text: '💝 애인이 "나 오늘 과제 너무 많아서 그냥 잤어..." 라고 할 때', options: [ { text: '"그럼 과제는 언제 다 하려고? 마감일 안 늦어?" (현실적인 걱정)', trait: 'T' }, { text: '"많이 피곤했구나 ㅠㅠ 오늘 푹 쉬고 내일 같이 하자!" (컨디션 걱정)', trait: 'F' } ] },
+      { id: 14, type: 'TF', text: '조별 과제 중 프리라이더(무임승차) 조원이 변명을 늘어놓는다.', options: [ { text: '얄짤없다. 단톡방에 기여도를 정확히 명시하고 교수님께 말씀드린다.', trait: 'T' }, { text: '사정이 있겠지 싶어 화는 나지만, 껄끄러운 분위기가 싫어 그냥 내가 다 안고 간다.', trait: 'F' } ] },
+      { id: 15, type: 'TF', text: '국시 모의고사 성적이 올랐다! 가장 듣고 싶은 칭찬은?', options: [ { text: '"너 진짜 똑똑하다! 공부 효율 최고네. 성적 폼 미쳤다!"', trait: 'T' }, { text: '"그동안 밤새면서 고생하더니 노력한 보람이 있네! 대단해!"', trait: 'F' } ] },
+      { id: 16, type: 'JP', text: '전공 서적, 실습복, 청진기 등 내 사물함/가방 상태는?', options: [ { text: '필요한 걸 바로 꺼낼 수 있게 항상 정해진 위치에 칼같이 정리되어 있다.', trait: 'J' }, { text: '어수선하지만 나름의 질서가 있어서 나만 물건을 잘 찾으면 그만이다.', trait: 'P' } ] },
+      { id: 17, type: 'JP', text: '중간고사 3주 전, 나의 공부 계획은?', options: [ { text: '아이패드나 플래너에 일자별/과목별로 공부 분량을 쫙 짜놓고 시작한다.', trait: 'J' }, { text: '계획은 무슨, 삘 꽂히는 과목부터 일단 책 펴고 벼락치기에 의존한다.', trait: 'P' } ] },
+      { id: 18, type: 'JP', text: '💝 연인과의 기념일 여행! 나의 준비 스타일은?', options: [ { text: '숙소 예약부터 시간대별 맛집 동선, 플랜B까지 노션으로 완벽 정리!', trait: 'J' }, { text: '숙소랑 기차표만 달랑 끊고, 현지에서 끌리는 곳으로 가는 즉흥 여행!', trait: 'P' } ] },
+      { id: 19, type: 'JP', text: '내일 아침 1교시 수업이 있다. 전날 밤 나는?', options: [ { text: '입을 옷, 챙길 가방을 미리 다 세팅해두고 알람을 3개 맞추고 잔다.', trait: 'J' }, { text: '아침의 나를 믿는다. 일어나서 잡히는 대로 입고 허겁지겁 뛰어간다.', trait: 'P' } ] },
+      { id: 20, type: 'JP', text: '임상 실습 중, 갑자기 루틴 업무 말고 다른 지시가 떨어졌다.', options: [ { text: '머릿속으로 짜둔 오늘의 일과가 틀어져서 은근히 스트레스 받는다.', trait: 'J' }, { text: '병원 일은 늘 유동적이지! 상황에 맞춰 유연하게 대처하고 넘어간다.', trait: 'P' } ] }
+    ];
+
+    // 결과 데이터
+    const RESULTS_DATA = {
+      ESTJ: {
+        title: '원리원칙 FM, 떡잎부터 수간호사',
+        desc: '병동의 질서와 원칙을 중시하는 당신! 과제 마감일을 칼같이 지키고 조별 과제에서 답답함을 참지 못해 조장을 맡는 타입입니다. 감정보다는 이성적 판단이 빨라 위급 상황에서 누구보다 침착하게 대처할 수 있는 확실한 에이스 간호사 재질입니다.',
+        jobs: [
+          { name: '추천 부서: 응급실(ER) / 중환자실(ICU)', reason: '빠른 판단력과 체계적인 처치가 필요한 곳에서 빛을 발함' },
+          { name: '연애 스타일: 데이트 플래너', reason: '연인의 일정까지 챙겨주는 꼼꼼함! 가끔은 팩폭을 줄이고 공감해 주세요.' }
+        ]
+      },
+      INFP: {
+        title: '환자 맘 잘알, 따뜻한 나이팅게일',
+        desc: '환자의 아픔에 깊이 공감하고 진심으로 위로해 주는 따뜻한 마음의 소유자. 빡센 실습 환경과 태움에 가장 상처받기 쉽지만, 당신의 진정성 있는 간호는 환자들에게 가장 큰 위로가 됩니다. 멘탈 관리만 조금 더 신경 쓰면 훌륭한 간호사가 될 거예요.',
+        jobs: [
+          { name: '추천 부서: 소아과(PED) / 호스피스 병동', reason: '세심한 배려와 깊은 공감 능력이 절대적으로 필요한 곳' },
+          { name: '연애 스타일: 로맨틱 헌신러', reason: '상대방에게 헌신하지만 짝사랑 앓이를 많이 해요. 내 마음도 돌봐주세요.' }
+        ]
+      },
+      ENFP: {
+        title: '병동의 인간 비타민, 인싸 실습생',
+        desc: '어딜 가든 분위기 메이커! 환자분들과도 스스럼없이 친해지고 실습 동기들 사이에서도 분위기를 띄우는 역할입니다. 다만 꼼꼼함이 조금 부족해 투약이나 차팅 실수에 주의해야 합니다. 특유의 친화력으로 병동에 활기를 불어넣을 거예요.',
+        jobs: [
+          { name: '추천 부서: 정신건강의학과(PSY) / 외래', reason: '환자와의 소통과 라포(Rapport) 형성이 중요한 부서' },
+          { name: '연애 스타일: 금사빠 직진러', reason: '호감 가면 숨기지 못해요! 애정 표현이 풍부하고 데이트가 늘 즐거워요.' }
+        ]
+      },
+      ISTJ: {
+        title: '한 치의 오차도 없는, 차팅의 정석',
+        desc: '매뉴얼과 프로토콜을 숨 쉬듯 지키는 모범생. 교수님과 차지쌤이 가장 믿고 맡길 수 있는 든든한 학생입니다. 묵묵히 제 할 일을 완벽하게 해내지만 갑작스러운 듀티 변경에는 스트레스를 받습니다. 안정적이고 정확한 간호의 표본!',
+        jobs: [
+          { name: '추천 부서: 수술실(OR) / 감염관리실', reason: '철저한 무균술과 오차 없는 정확한 프로토콜이 요구되는 곳' },
+          { name: '연애 스타일: 든든한 돌담', reason: '표현은 서툴지만 한 번 사귀면 변함없이 오래가는 안정적인 연애를 해요.' }
+        ]
+      },
+      DEFAULT: {
+        title: '유연한 올라운더, 적응력 만렙 간호대생',
+        desc: '어떤 실습지, 어떤 조원을 만나도 무난하게 잘 섞여 들어가는 뛰어난 적응력의 소유자. 환자의 감정도 살필 줄 알고 현실적인 처치도 잘 해내는 균형 잡힌 성향입니다. 스트레스 관리 능력이 좋아 임상에서 길게 살아남을 스타일입니다.',
+        jobs: [
+          { name: '추천 부서: 일반 내과/외과 병동 (GW)', reason: '다양한 케이스의 환자를 유연하게 대처할 수 있는 곳' },
+          { name: '연애 스타일: 평화주의자', reason: '갈등을 싫어해 다툼이 적고, 서로 존중하는 편안한 연애를 선호해요.' }
+        ]
+      }
+    };
+
+    let currentQuestionIdx = 0;
+    let userAnswers = [];
+    let resultPercentages = null;
+
+    // 토스트 메시지 함수
+    function showToast(msg) {
+      const toast = document.getElementById('toast-msg');
+      toast.innerText = msg;
+      toast.classList.remove('hidden');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        setTimeout(() => toast.classList.add('hidden'), 300);
+      }, 2500);
+    }
+
+    // 화면 전환 함수
+    function showScreen(screenId) {
+      document.getElementById('screen-intro').classList.add('hidden');
+      document.getElementById('screen-test').classList.add('hidden');
+      document.getElementById('screen-result').classList.add('hidden');
+      document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    function startTest() {
+      userAnswers = [];
+      currentQuestionIdx = 0;
+      renderQuestion();
+      showScreen('screen-test');
+    }
+
+    function renderQuestion() {
+      const q = QUESTIONS[currentQuestionIdx];
+      document.getElementById('progress-text').innerText = `${currentQuestionIdx + 1} / ${QUESTIONS.length}`;
+      document.getElementById('progress-bar').style.width = `${((currentQuestionIdx + 1) / QUESTIONS.length) * 100}%`;
+      
+      const btnBack = document.getElementById('btn-back');
+      if (currentQuestionIdx === 0) {
+        btnBack.style.visibility = 'hidden';
+      } else {
+        btnBack.style.visibility = 'visible';
+      }
+
+      document.getElementById('question-text').innerHTML = `<span class="text-blue-600 mr-2">Q${q.id}.</span>${q.text}`;
+      
+      const container = document.getElementById('options-container');
+      container.innerHTML = '';
+      
+      q.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'w-full min-h-[64px] text-left p-5 bg-white border-2 border-slate-100 hover:border-blue-400 active:scale-[0.98] transition-all rounded-2xl shadow-sm text-slate-700 font-medium leading-relaxed';
+        btn.innerText = opt.text;
+        btn.onclick = () => handleAnswer(opt.trait);
+        container.appendChild(btn);
+      });
+    }
+
+    function handleAnswer(trait) {
+      userAnswers[currentQuestionIdx] = trait;
+      if (currentQuestionIdx < QUESTIONS.length - 1) {
+        currentQuestionIdx++;
+        renderQuestion();
+      } else {
+        calculateResult();
+      }
+    }
+
+    function handleBack() {
+      if (currentQuestionIdx > 0) {
+        currentQuestionIdx--;
+        renderQuestion();
+      }
+    }
+
+    function calculateResult() {
+      const scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+      userAnswers.forEach(t => scores[t]++);
+
+      const getP = (a, b) => Math.round((a / (a + b)) * 100) || 50;
+      
+      resultPercentages = {
+        E: getP(scores.E, scores.I), I: getP(scores.I, scores.E),
+        S: getP(scores.S, scores.N), N: getP(scores.N, scores.S),
+        T: getP(scores.T, scores.F), F: getP(scores.F, scores.T),
+        J: getP(scores.J, scores.P), P: getP(scores.P, scores.J)
+      };
+
+      const mbti = 
+        (scores.E >= scores.I ? 'E' : 'I') +
+        (scores.S >= scores.N ? 'S' : 'N') +
+        (scores.T >= scores.F ? 'T' : 'F') +
+        (scores.J >= scores.P ? 'J' : 'P');
+
+      renderResult(mbti);
+      showScreen('screen-result');
+    }
+
+    function renderResult(mbti) {
+      const details = RESULTS_DATA[mbti] || RESULTS_DATA['DEFAULT'];
+      const p = resultPercentages;
+
+      // 텍스트 매핑
+      document.getElementById('result-mbti').innerText = mbti;
+      document.getElementById('result-title').innerText = details.title;
+      document.getElementById('result-desc').innerText = details.desc;
+
+      // 스펙트럼 바 매핑
+      document.getElementById('bar-e').style.width = `${p.E}%`;
+      document.getElementById('text-e').innerText = `E (외향) ${p.E}%`;
+      document.getElementById('text-i').innerText = `${p.I}% I (내향)`;
+
+      document.getElementById('bar-s').style.width = `${p.S}%`;
+      document.getElementById('text-s').innerText = `S (현실) ${p.S}%`;
+      document.getElementById('text-n').innerText = `${p.N}% N (직관)`;
+
+      document.getElementById('bar-t').style.width = `${p.T}%`;
+      document.getElementById('text-t').innerText = `T (이성) ${p.T}%`;
+      document.getElementById('text-f').innerText = `${p.F}% F (공감)`;
+
+      document.getElementById('bar-j').style.width = `${p.J}%`;
+      document.getElementById('text-j').innerText = `J (계획) ${p.J}%`;
+      document.getElementById('text-p').innerText = `${p.P}% P (즉흥)`;
+
+      // 추천 직업 리스트 생성
+      const jobsList = document.getElementById('jobs-list');
+      jobsList.innerHTML = '';
+      details.jobs.forEach(job => {
+        const li = document.createElement('li');
+        li.className = 'bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-1';
+        li.innerHTML = `<span class="font-bold text-slate-800 text-[15px]">${job.name}</span>
+                        <span class="text-xs text-slate-500 leading-normal">${job.reason}</span>`;
+        jobsList.appendChild(li);
+      });
+    }
+
+    async function handleImageDownload() {
+      const captureArea = document.getElementById('capture-area');
+      if (!captureArea) return;
+
+      showToast('이미지를 렌더링 중입니다... 📸');
+
+      try {
+        const canvas = await html2canvas(captureArea, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#f8fafc', // 배경색 강제 지정
+          onclone: (clonedDoc) => {
+            const clonedArea = clonedDoc.getElementById('capture-area');
+            if (clonedArea) {
+              clonedArea.style.animation = 'none'; // 애니메이션 정지
+              clonedArea.style.opacity = '1';      // 불투명도 100% 고정
+            }
+          }
+        });
+
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          const file = new File([blob], 'mbti_result.png', { type: 'image/png' });
+
+          // 모바일: 네이티브 공유창 띄워서 '이미지 저장' 유도
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: '간호대생 생존형 MBTI 결과',
+              });
+              return; 
+            } catch (error) {
+              console.log('공유 취소:', error);
+            }
+          }
+
+          // PC 환경 등: 직접 다운로드
+          const dataUrl = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.download = '캠퍼스라이프_MBTI.png';
+          link.href = dataUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          showToast('이미지가 다운로드 되었습니다!');
+          
+        }, 'image/png');
+
+      } catch (error) {
+        console.error('캡처 에러:', error);
+        showToast('이미지 저장에 실패했습니다.');
+      }
+    }
+
+    async function handleResultShare() {
+      const mbti = document.getElementById('result-mbti').innerText;
+      const title = document.getElementById('result-title').innerText;
+      const shareText = `내 결과는 [${mbti} : ${title}]이야!\n너의 간호대 생존 유형도 확인해봐! 🩺\n${window.location.href}`;
+
+      // 텍스트 복사용 임시 요소 생성 (모바일 및 iFrame 호환성 최적화)
+      const tempInput = document.createElement('textarea');
+      tempInput.value = shareText;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      tempInput.setSelectionRange(0, 99999); // 모바일 기기 대응
+
+      try {
+        // 클립보드에 복사 실행
+        document.execCommand('copy');
+        showToast('복사가 완료되었습니다.');
+      } catch (err) {
+        showToast('링크 복사에 실패했습니다.');
+      } finally {
+        // 임시 요소 제거
+        document.body.removeChild(tempInput);
+      }
+    }
+
+    function restartTest() {
+      userAnswers = [];
+      currentQuestionIdx = 0;
+      resultPercentages = null;
+      showScreen('screen-intro');
+    }
+
+    // 초기 화면 노출
+    showScreen('screen-intro');
+  </script>
+</body>
+</html>
